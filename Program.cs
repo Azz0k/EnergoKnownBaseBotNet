@@ -20,6 +20,11 @@ builder.Services.AddSingleton<BotService>();
 
 builder.Services.AddHostedService<WindowsBackgroundService>();
 builder.Services.AddOptions<AppSettings>().BindConfiguration("AppSettings");
+builder.Services.Configure<EventLogSettings>(config =>
+{
+    config.SourceName = "EnergoKnownBotService";
+    config.LogName = "EnergoKnownBotService";
 
+});
 IHost host = builder.Build();
 host.Run();

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Runtime;
 using System.Threading;
@@ -23,8 +24,6 @@ namespace TestWorkerService
             _settings = settings.Value;
             _logger = logger;
             _botService = botService;
-            
-
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -36,7 +35,7 @@ namespace TestWorkerService
                 {
                     Environment.Exit(1);
                 }
-                _logger.LogWarning("Service started");
+                _logger.LogCritical("Service started");
                 _botClient = new TelegramBotClient(_settings.TelegramBotToken);
                 _receiverOptions = new ReceiverOptions
                 {
@@ -80,13 +79,16 @@ namespace TestWorkerService
             {
                 if (message.Type == MessageType.Text)
                 {
-                    await BotStartHandler(user.Id);
+                    _logger.LogWarning($"Authorized id: {message.From.Id} Message:  {message.Text}");
+
+                   await BotStartHandler(user.Id);
                 }
             }
             else
             {
                 if (message.Type == MessageType.Contact)
                 {
+                    _logger.LogWarning($"Contact:  {message.Contact.FirstName} {message.Contact.LastName} {message.Contact.PhoneNumber}");
                     if (_botService.IsPhoneNumberAllowed(message.Contact.PhoneNumber, user.Id))
                     {
                         await _botClient.SendTextMessageAsync(
@@ -98,6 +100,7 @@ namespace TestWorkerService
                 }
                 else
                 {
+                    _logger.LogWarning($"Not authorized id: {message.From.Id} Message:  {message.Text}");
                     ReplyKeyboardMarkup replyKeyboardMarkup = new(new[]
                     {
                         KeyboardButton.WithRequestContact("Отправить контактные данные"),
@@ -115,6 +118,7 @@ namespace TestWorkerService
         {
             var user = callbackQuery?.From;
             var chat = callbackQuery.Message.Chat;
+            _logger.LogWarning($"Callback: User: {user.Id} callbackQuery: {callbackQuery.Data}");
             try
             {
                 var deleteTask = _botClient.DeleteMessageAsync(chat.Id, callbackQuery.Message.MessageId);
